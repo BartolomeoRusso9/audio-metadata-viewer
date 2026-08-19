@@ -1,42 +1,39 @@
-name: Build
+name: Build and Release
 
 on:
   push:
+    # Il workflow partirà SOLO quando fai il push di un tag che inizia con "v"
     tags:
       - 'v*'
-  workflow_dispatch:
+
+permissions:
+  # Permesso fondamentale: autorizza GitHub Actions a creare la Release e caricare i file
+  contents: write
 
 jobs:
-  build:
+  release:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      # Evita che se fallisce un OS, vengano bloccati anche gli altri
+      fail-fast: false 
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v4
+
+      - name: Setup di Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # FIX 1: Use 'npm ci' instead of 'npm install' to prevent Windows EPERM file-locking errors
-      - run: npm ci
+      - name: Installazione pulita delle dipendenze
+        run: npm ci
 
-      # FIX 2: This will now run 'electron-builder' without the -mwl flags (assuming you updated package.json)
-      # This ensures the Ubuntu runner only builds Linux, Mac builds Mac, etc.
-      - name: Build & package
-        run: npm run dist
+      - name: Build e Pubblicazione su GitHub Releases
+        run: npx electron-builder --publish always
         env:
+          # Questo token è generato automaticamente da GitHub in ogni esecuzione
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.exe
-            dist/*.AppImage
-            dist/*.deb
-          if-no-files-found: ignore
