@@ -2,14 +2,18 @@ name: Build and Release
 
 on:
   push:
-    # Si avvia in automatico quando fai il push di un tag (es. v1.0.0)
     tags:
       - 'v*'
-  # Aggiunge il pulsante su GitHub per avviarlo manualmente
   workflow_dispatch:
+    # Aggiunge un form da compilare quando avvii il workflow manualmente
+    inputs:
+      version:
+        description: 'Versione da rilasciare (es. 1.0.1)'
+        required: true
+        type: string
+        default: '1.0.1'
 
 permissions:
-  # Permesso per creare la Release
   contents: write
 
 jobs:
@@ -32,6 +36,11 @@ jobs:
 
       - name: Installazione pulita delle dipendenze
         run: npm ci
+
+      # Se il workflow è stato avviato manualmente, imposta la versione scelta
+      - name: Imposta la versione manuale
+        if: github.event_name == 'workflow_dispatch'
+        run: npm version ${{ inputs.version }} --no-git-tag-version
 
       - name: Build e Pubblicazione su GitHub Releases
         run: npx electron-builder --publish always
