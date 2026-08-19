@@ -1,6 +1,6 @@
 # Audio Metadata Viewer
 
-A lightweight desktop app to inspect the metadata, bit depth, sample rate, bitrate, and overall quality of any audio file — powered by **ffprobe**, with a dark macOS-style interface and **JetBrains Mono** font.
+A lightweight desktop app to inspect the metadata, bit depth, sample rate, bitrate, and overall quality of any audio file — powered by **ffprobe**
 
 Works on **macOS, Windows, and Linux**. `ffprobe` is bundled automatically (via `ffprobe-static`), so there's nothing extra to install — just download and run.
 
