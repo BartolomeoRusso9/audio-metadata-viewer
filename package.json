@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "description": "Inspect metadata, bit depth, sample rate, and quality of an audio file using ffprobe, with a macOS-style interface.",
   "main": "main.js",
-  "author": "BartolomeoRusso9",
+  "author": {
+  "name": "BartolomeoRusso9",
+  "email": "bartolomeorusso9@outlook.it"
+  },
   "license": "MIT",
   "scripts": {
     "start": "electron .",
