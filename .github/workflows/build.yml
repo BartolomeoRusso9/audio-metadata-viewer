@@ -73,7 +73,7 @@ jobs:
 
       - name: Build Audio Metadata Viewer
         # Previene gli errori di firma su macOS e ferma la pubblicazione automatica di electron-builder
-        run: npx electron-builder --publish never -c.mac.identity=null
+        run: npx electron-builder --publish never
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
