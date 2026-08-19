@@ -40,7 +40,7 @@ jobs:
       # Se il workflow è stato avviato manualmente, imposta la versione scelta
       - name: Imposta la versione manuale
         if: github.event_name == 'workflow_dispatch'
-        run: npm version ${{ inputs.version }} --no-git-tag-version
+        run: npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
 
       - name: Build e Pubblicazione su GitHub Releases
         run: npx electron-builder --publish always
