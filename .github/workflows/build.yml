@@ -5,7 +5,6 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    # Aggiunge un form da compilare quando avvii il workflow manualmente
     inputs:
       version:
         description: 'Versione da rilasciare (es. 1.0.1)'
@@ -17,8 +16,9 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build on ${{ matrix.os }}
+  # FASE 1: I tre server compilano i file
+  build:
+    name: Build su ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false 
@@ -37,12 +37,44 @@ jobs:
       - name: Installazione pulita delle dipendenze
         run: npm ci
 
-      # Se il workflow è stato avviato manualmente, imposta la versione scelta
-      - name: Imposta la versione manuale
+      - name: Imposta la versione manuale (solo se avviato a mano)
         if: github.event_name == 'workflow_dispatch'
         run: npm version ${{ inputs.version }} --no-git-tag-version --allow-same-version
 
-      - name: Build e Pubblicazione su GitHub Releases
-        run: npx electron-builder --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build dei pacchetti (Senza Pubblicazione)
+        # Ho rimosso '--publish always'. Ora crea solo i file senza caricarli online.
+        run: npx electron-builder
+
+      - name: Parcheggia i file temporaneamente
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacchetti-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.zip
+            dist/*.blockmap
+            dist/*.yml
+          if-no-files-found: ignore
+
+  # FASE 2: Un server raccoglie tutti i file e crea la Release unica
+  publish_release:
+    name: Unifica e Pubblica la Release
+    needs: build # Aspetta tassativamente che "build" abbia finito su tutti e 3 i sistemi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Raccogli tutti i pacchetti scaricati
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true # Unisce i file di Mac, Windows e Linux nella stessa cartella
+
+      - name: Crea la singola Release su GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          # Se lo avvii a mano aggiunge la 'v' al numero inserito (es. v1.0.1), altrimenti usa il tag pushato
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
+          draft: true # Mantiene la release come bozza per farti controllare prima
+          files: release-files/*
