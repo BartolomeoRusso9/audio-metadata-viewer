@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder -mwl",
+    "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux"

@@ -19,8 +19,11 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm install
+      # FIX 1: Use 'npm ci' instead of 'npm install' to prevent Windows EPERM file-locking errors
+      - run: npm ci
 
+      # FIX 2: This will now run 'electron-builder' without the -mwl flags (assuming you updated package.json)
+      # This ensures the Ubuntu runner only builds Linux, Mac builds Mac, etc.
       - name: Build & package
         run: npm run dist
         env:
