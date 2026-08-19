@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data:;" />
+<title>Audio Metadata Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Custom titlebar (traffic lights styled the same on every OS) -->
+  <header class="titlebar" id="titlebar">
+    <div class="traffic-lights">
+      <button class="tl tl-close" id="btn-close" title="Close"></button>
+      <button class="tl tl-min" id="btn-min" title="Minimize"></button>
+      <button class="tl tl-zoom" title="Zoom" disabled></button>
+    </div>
+    <div class="titlebar-title">Audio Metadata Viewer</div>
+    <div class="titlebar-spacer"></div>
+  </header>
+
+  <main class="app">
+
+    <!-- Empty state / drop zone -->
+    <section class="dropzone" id="dropzone">
+      <div class="dropzone-inner">
+        <svg class="dropzone-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 6 L32 42" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <path d="M18 28 L32 42 L46 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="8" y="48" width="48" height="10" rx="3" stroke="currentColor" stroke-width="3"/>
+        </svg>
+        <h1>Drag an audio file here</h1>
+        <p>or</p>
+        <button class="btn-primary" id="btn-browse">Choose a file…</button>
+        <p class="hint">MP3 · WAV · FLAC · AAC · ALAC · AIFF · OGG · OPUS · DSD and more</p>
+        <p class="error" id="error-msg"></p>
+      </div>
+    </section>
+
+    <!-- Results dashboard -->
+    <section class="dashboard hidden" id="dashboard">
+
+      <div class="file-summary">
+        <div class="file-summary-main">
+          <h1 id="file-name">—</h1>
+          <div class="file-summary-tags" id="file-tags"></div>
+        </div>
+        <button class="btn-secondary" id="btn-new">Analyze another file</button>
+      </div>
+
+      <!-- Signature element: hardware-style LED quality meter -->
+      <div class="meter-panel">
+        <div class="meter-block">
+          <span class="meter-label">Sample rate</span>
+          <div class="led-row" id="led-samplerate"></div>
+          <span class="meter-value" id="val-samplerate">—</span>
+        </div>
+        <div class="meter-block">
+          <span class="meter-label">Bit depth</span>
+          <div class="led-row" id="led-bitdepth"></div>
+          <span class="meter-value" id="val-bitdepth">—</span>
+        </div>
+        <div class="meter-block">
+          <span class="meter-label">Bitrate</span>
+          <div class="led-row" id="led-bitrate"></div>
+          <span class="meter-value" id="val-bitrate">—</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Format</h2>
+          <dl id="format-list" class="kv"></dl>
+        </div>
+        <div class="card">
+          <h2>Audio stream</h2>
+          <dl id="audio-list" class="kv"></dl>
+        </div>
+        <div class="card card-wide" id="video-card" style="display:none">
+          <h2>Video stream / cover art</h2>
+          <dl id="video-list" class="kv"></dl>
+        </div>
+        <div class="card card-wide">
+          <h2>Tags / metadata</h2>
+          <dl id="tags-list" class="kv"></dl>
+        </div>
+      </div>
+
+      <details class="raw-json">
+        <summary>Raw ffprobe JSON</summary>
+        <pre id="raw-json"></pre>
+      </details>
+
+    </section>
+
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

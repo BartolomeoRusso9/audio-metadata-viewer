@@ -1,0 +1,47 @@
+{
+  "name": "audio-metadata-viewer",
+  "productName": "Audio Metadata Viewer",
+  "version": "1.0.0",
+  "description": "Inspect metadata, bit depth, sample rate, and quality of an audio file using ffprobe, with a macOS-style interface.",
+  "main": "main.js",
+  "author": "BartolomeoRusso9",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder -mwl",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "ffprobe-static": "^3.1.0"
+  },
+  "build": {
+    "appId": "com.example.audiometadataviewer",
+    "productName": "Audio Metadata Viewer",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/ffprobe-static/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo"
+    }
+  }
+}
