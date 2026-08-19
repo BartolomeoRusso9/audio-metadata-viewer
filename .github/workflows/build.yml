@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version_tag:
-        description: 'Nome del tag di versione (es: v1.0.1)'
+        description: 'Version tag name (e.g. v1.0.1)'
         required: false
         type: string
 
@@ -32,11 +32,11 @@ jobs:
         shell: bash
         run: |
           USER_INPUT="${{ github.event.inputs.version_tag }}"
-          
+
           if [[ -n "$USER_INPUT" ]]; then
             echo "Using manually provided tag: $USER_INPUT"
             NEW_TAG="$USER_INPUT"
-            # Rimuove la 'v' iniziale se presente, poiché npm version preferisce i numeri puri
+            # Strip the leading 'v' if present, since npm version expects a plain number
             CLEAN_VERSION="${NEW_TAG#v}"
             npm version "$CLEAN_VERSION" --allow-same-version -m "chore(release): %s [skip ci]"
           else
@@ -45,7 +45,7 @@ jobs:
             NEW_TAG=$(node -p "require('./package.json').version")
             NEW_TAG="v$NEW_TAG"
           fi
-          
+
           git push --follow-tags
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
 
@@ -72,13 +72,19 @@ jobs:
         run: npm ci
 
       - name: Build Audio Metadata Viewer
-        # Previene gli errori di firma su macOS e ferma la pubblicazione automatica di electron-builder
+        # CSC_IDENTITY_AUTO_DISCOVERY=false stops electron-builder from looking for a
+        # macOS signing certificate (we don't have an Apple Developer identity in CI).
+        # This env var is safe on every OS in the matrix, unlike the CLI flag
+        # "-c.mac.identity=null", which electron-builder's Windows CLI parser
+        # misreads as a config *file path* and crashes with ENOENT.
         run: npx electron-builder --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pacchetti-${{ matrix.os }}
+          name: packages-${{ matrix.os }}
           path: |
             dist/*.exe
             dist/*.dmg
@@ -93,12 +99,12 @@ jobs:
   release:
       needs: [bump, build]
       runs-on: ubuntu-latest
-      
+
       steps:
         - name: Download all build artifacts
           uses: actions/download-artifact@v4
           with:
-            pattern: pacchetti-*
+            pattern: packages-*
             path: release-files
             merge-multiple: true
 
@@ -106,17 +112,17 @@ jobs:
           run: |
             cat << 'EOF' > release_body.md
             ### DOWNLOADS
-            
-            [![Windows](https://img.shields.io/badge/Windows-[DOWNLOAD]-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#) 
-            [![macOS](https://img.shields.io/badge/macOS-[DOWNLOAD]-000000?style=for-the-badge&logo=apple&logoColor=white)](#) 
+
+            [![Windows](https://img.shields.io/badge/Windows-[DOWNLOAD]-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#)
+            [![macOS](https://img.shields.io/badge/macOS-[DOWNLOAD]-000000?style=for-the-badge&logo=apple&logoColor=white)](#)
             [![Linux](https://img.shields.io/badge/Linux-[DOWNLOAD]-FFB300?style=for-the-badge&logo=linux&logoColor=black)](#)
 
             <details>
-            <summary><b>💻 Informazioni sull'installazione</b></summary>
-            
-            - **Windows**: Scarica il file `.exe` ed eseguilo.
-            - **macOS**: Scarica il file `.dmg`, aprilo e trascina l'app nella cartella Applicazioni. (Nota: potresti dover autorizzare l'app dalle impostazioni di sistema in quanto non firmata).
-            - **Linux**: Scarica il file `.AppImage` (rendilo eseguibile con `chmod +x`) oppure installa il file `.deb`.
+            <summary><b>💻 Installation notes</b></summary>
+
+            - **Windows**: Download the `.exe` file and run it.
+            - **macOS**: Download the `.dmg` file, open it, and drag the app into the Applications folder. (Note: you may need to allow the app in System Settings, since it isn't code-signed).
+            - **Linux**: Download the `.AppImage` file (make it executable with `chmod +x`) or install the `.deb` package.
             </details>
             EOF
 
@@ -128,7 +134,7 @@ jobs:
             draft: false
             prerelease: false
             body_path: release_body.md
-            # Attiva la generazione automatica delle note di rilascio di GitHub
+            # Enables GitHub's automatic release notes generation
             generate_release_notes: true
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
