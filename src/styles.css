@@ -296,6 +296,100 @@ html, body {
   margin: 0 0 10px;
 }
 
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.btn-chip {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 100px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, filter 0.15s ease;
+  user-select: none;
+}
+.btn-chip:hover { background: var(--panel-hover); color: var(--text); }
+.btn-chip:active { transform: scale(0.97); }
+.btn-chip.accent {
+  color: #0a0a0a;
+  background: var(--accent);
+  border-color: transparent;
+}
+.btn-chip.accent:hover { filter: brightness(1.08); }
+.btn-chip:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
+
+.hint-inline {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 2px 0 10px;
+}
+
+/* ---------- Editable metadata fields ---------- */
+
+.kv dd.editable {
+  padding: 0;
+}
+
+.kv input.tag-input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.kv input.tag-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.kv dt.editable-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kv .remove-tag {
+  border: none;
+  background: none;
+  color: var(--led-red);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+/* ---------- Spectrogram ---------- */
+
+.spectrogram-wrap {
+  padding-bottom: 4px;
+}
+
+.spectrogram-img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  display: block;
+}
+
 .kv {
   margin: 0;
   display: grid;

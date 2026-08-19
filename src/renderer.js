@@ -7,6 +7,12 @@ document.getElementById('btn-min').addEventListener('click', () => window.api.mi
 document.getElementById('btn-browse').addEventListener('click', browse);
 document.getElementById('btn-new').addEventListener('click', showDropzone);
 
+// State for the currently analyzed file, used by the metadata editor and
+// the spectrogram generator.
+let currentFilePath = null;
+let currentTags = {};
+let editingTags = false;
+
 // ---------- Drag & drop ----------
 
 ['dragenter', 'dragover'].forEach(evt => {
@@ -37,6 +43,10 @@ function showDropzone() {
   dashboard.classList.add('hidden');
   dropzone.classList.remove('hidden');
   errorMsg.textContent = '';
+  currentFilePath = null;
+  currentTags = {};
+  exitTagEditMode({ discard: true });
+  resetSpectrogram();
 }
 
 // ---------- Analysis ----------
@@ -45,6 +55,8 @@ async function analyze(filePath) {
   errorMsg.textContent = '';
   try {
     const { data } = await window.api.analyze(filePath);
+    resetSpectrogram();
+    exitTagEditMode({ discard: true });
     render(data, filePath);
     dropzone.classList.add('hidden');
     dashboard.classList.remove('hidden');
@@ -58,6 +70,8 @@ function render(data, filePath) {
   const streams = data.streams || [];
   const audio = streams.find(s => s.codec_type === 'audio') || {};
   const video = streams.find(s => s.codec_type === 'video');
+
+  currentFilePath = filePath;
 
   const fileName = filePath.split(/[\\/]/).pop();
   document.getElementById('file-name').textContent = fileName;
@@ -123,19 +137,189 @@ function render(data, filePath) {
   }
 
   // ---- Tags / metadata card ----
-  const tagsMerged = { ...(format.tags || {}), ...(audio.tags || {}) };
-  const tagEntries = Object.entries(tagsMerged);
-  const tagsDl = document.getElementById('tags-list');
-  tagsDl.innerHTML = '';
-  if (tagEntries.length === 0) {
-    tagsDl.innerHTML = '<div class="empty">No metadata/tags found in this file.</div>';
-  } else {
-    tagEntries.forEach(([k, v]) => addKv(tagsDl, prettify(k), String(v)));
-  }
+  currentTags = { ...(format.tags || {}), ...(audio.tags || {}) };
+  renderTagsReadOnly();
 
   // ---- Raw JSON ----
   document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
 }
+
+// ---------- Tags / metadata (read-only + editable) ----------
+
+function renderTagsReadOnly() {
+  const tagsDl = document.getElementById('tags-list');
+  const entries = Object.entries(currentTags);
+  tagsDl.innerHTML = '';
+  if (entries.length === 0) {
+    tagsDl.innerHTML = '<div class="empty">No metadata/tags found in this file.</div>';
+  } else {
+    entries.forEach(([k, v]) => addKv(tagsDl, prettify(k), String(v)));
+  }
+}
+
+function enterTagEditMode() {
+  editingTags = true;
+  document.getElementById('btn-edit-tags').classList.add('hidden');
+  document.getElementById('btn-add-tag').classList.remove('hidden');
+  document.getElementById('btn-save-tags').classList.remove('hidden');
+  document.getElementById('btn-cancel-tags').classList.remove('hidden');
+  renderTagsEditable();
+}
+
+function exitTagEditMode({ discard } = {}) {
+  editingTags = false;
+  document.getElementById('btn-edit-tags').classList.remove('hidden');
+  document.getElementById('btn-add-tag').classList.add('hidden');
+  document.getElementById('btn-save-tags').classList.add('hidden');
+  document.getElementById('btn-cancel-tags').classList.add('hidden');
+  const msg = document.getElementById('tags-save-msg');
+  msg.classList.add('hidden');
+  msg.textContent = '';
+  if (currentFilePath) renderTagsReadOnly();
+}
+
+function renderTagsEditable() {
+  const tagsDl = document.getElementById('tags-list');
+  tagsDl.innerHTML = '';
+  const entries = Object.entries(currentTags);
+  if (entries.length === 0) {
+    tagsDl.innerHTML = '<div class="empty">No tags yet — use “+ Add field” to create one.</div>';
+    return;
+  }
+  entries.forEach(([key, value]) => addEditableKv(tagsDl, key, value));
+}
+
+function addEditableKv(dl, key, value) {
+  const dt = document.createElement('dt');
+  dt.className = 'editable-key';
+  const keyInput = document.createElement('input');
+  keyInput.className = 'tag-input';
+  keyInput.value = key;
+  keyInput.dataset.role = 'key';
+  keyInput.style.maxWidth = '160px';
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-tag';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remove this field';
+  removeBtn.addEventListener('click', () => {
+    const oldKey = keyInput.dataset.originalKey;
+    if (oldKey) delete currentTags[oldKey];
+    dt.remove();
+    dd.remove();
+  });
+  keyInput.dataset.originalKey = key;
+  dt.appendChild(keyInput);
+  dt.appendChild(removeBtn);
+
+  const dd = document.createElement('dd');
+  dd.className = 'editable';
+  const valueInput = document.createElement('input');
+  valueInput.className = 'tag-input';
+  valueInput.value = value;
+  valueInput.dataset.role = 'value';
+  dd.appendChild(valueInput);
+
+  dl.appendChild(dt);
+  dl.appendChild(dd);
+}
+
+function collectEditedTags() {
+  const tagsDl = document.getElementById('tags-list');
+  const keyInputs = tagsDl.querySelectorAll('input[data-role="key"]');
+  const tags = {};
+  keyInputs.forEach((keyInput) => {
+    const dt = keyInput.closest('dt');
+    const dd = dt.nextElementSibling;
+    const valueInput = dd ? dd.querySelector('input[data-role="value"]') : null;
+    const key = keyInput.value.trim();
+    if (!key) return;
+    tags[key] = valueInput ? valueInput.value : '';
+  });
+  return tags;
+}
+
+document.getElementById('btn-edit-tags').addEventListener('click', () => {
+  if (!currentFilePath) return;
+  enterTagEditMode();
+});
+
+document.getElementById('btn-cancel-tags').addEventListener('click', () => {
+  exitTagEditMode({ discard: true });
+});
+
+document.getElementById('btn-add-tag').addEventListener('click', () => {
+  const tagsDl = document.getElementById('tags-list');
+  const empty = tagsDl.querySelector('.empty');
+  if (empty) empty.remove();
+  addEditableKv(tagsDl, '', '');
+  const inputs = tagsDl.querySelectorAll('input[data-role="key"]');
+  const lastKeyInput = inputs[inputs.length - 1];
+  if (lastKeyInput) lastKeyInput.focus();
+});
+
+document.getElementById('btn-save-tags').addEventListener('click', async () => {
+  if (!currentFilePath) return;
+  const saveBtn = document.getElementById('btn-save-tags');
+  const msg = document.getElementById('tags-save-msg');
+  const tags = collectEditedTags();
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  msg.classList.remove('hidden');
+  msg.textContent = '';
+  try {
+    const result = await window.api.saveTags(currentFilePath, tags);
+    if (result.canceled) {
+      msg.textContent = 'Save canceled.';
+    } else {
+      currentTags = tags;
+      msg.textContent = `Saved to ${result.outPath}`;
+      exitTagEditMode();
+      msg.classList.remove('hidden');
+    }
+  } catch (err) {
+    msg.textContent = err.message || 'Unable to save the file.';
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save as…';
+  }
+});
+
+// ---------- Spectrogram ----------
+
+function resetSpectrogram() {
+  const img = document.getElementById('spectrogram-img');
+  const hint = document.getElementById('spectrogram-hint');
+  const btn = document.getElementById('btn-spectrogram');
+  img.classList.add('hidden');
+  img.removeAttribute('src');
+  hint.classList.remove('hidden');
+  hint.textContent = 'Renders a frequency-over-time view of the whole file using ffmpeg.';
+  btn.disabled = false;
+  btn.textContent = 'Generate spectrogram';
+}
+
+document.getElementById('btn-spectrogram').addEventListener('click', async () => {
+  if (!currentFilePath) return;
+  const btn = document.getElementById('btn-spectrogram');
+  const hint = document.getElementById('spectrogram-hint');
+  const img = document.getElementById('spectrogram-img');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  hint.classList.remove('hidden');
+  hint.textContent = 'Analyzing the audio and rendering the spectrogram, this can take a few seconds…';
+  try {
+    const { dataUrl } = await window.api.spectrogram(currentFilePath);
+    img.src = dataUrl;
+    img.classList.remove('hidden');
+    hint.classList.add('hidden');
+    btn.textContent = 'Regenerate';
+  } catch (err) {
+    hint.textContent = err.message || 'Unable to generate the spectrogram.';
+    btn.textContent = 'Generate spectrogram';
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ---------- Meter rendering ----------
 

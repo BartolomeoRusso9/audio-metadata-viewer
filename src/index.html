@@ -84,8 +84,30 @@
           <dl id="video-list" class="kv"></dl>
         </div>
         <div class="card card-wide">
-          <h2>Tags / metadata</h2>
+          <div class="card-head">
+            <h2>Tags / metadata</h2>
+            <div class="card-actions">
+              <button class="btn-chip" id="btn-edit-tags">Edit metadata</button>
+              <button class="btn-chip hidden" id="btn-add-tag">+ Add field</button>
+              <button class="btn-chip accent hidden" id="btn-save-tags">Save as…</button>
+              <button class="btn-chip hidden" id="btn-cancel-tags">Cancel</button>
+            </div>
+          </div>
           <dl id="tags-list" class="kv"></dl>
+          <p class="hint-inline hidden" id="tags-save-msg"></p>
+        </div>
+
+        <div class="card card-wide">
+          <div class="card-head">
+            <h2>Spectrogram</h2>
+            <div class="card-actions">
+              <button class="btn-chip" id="btn-spectrogram">Generate spectrogram</button>
+            </div>
+          </div>
+          <div id="spectrogram-wrap" class="spectrogram-wrap">
+            <p class="hint-inline" id="spectrogram-hint">Renders a frequency-over-time view of the whole file using ffmpeg.</p>
+            <img id="spectrogram-img" class="spectrogram-img hidden" alt="Spectrogram" />
+          </div>
         </div>
       </div>
 
