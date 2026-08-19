@@ -2,12 +2,14 @@ name: Build and Release
 
 on:
   push:
-    # Il workflow partirà SOLO quando fai il push di un tag che inizia con "v"
+    # Si avvia in automatico quando fai il push di un tag (es. v1.0.0)
     tags:
       - 'v*'
+  # Aggiunge il pulsante su GitHub per avviarlo manualmente
+  workflow_dispatch:
 
 permissions:
-  # Permesso fondamentale: autorizza GitHub Actions a creare la Release e caricare i file
+  # Permesso per creare la Release
   contents: write
 
 jobs:
@@ -15,7 +17,6 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      # Evita che se fallisce un OS, vengano bloccati anche gli altri
       fail-fast: false 
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
@@ -35,5 +36,4 @@ jobs:
       - name: Build e Pubblicazione su GitHub Releases
         run: npx electron-builder --publish always
         env:
-          # Questo token è generato automaticamente da GitHub in ogni esecuzione
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
